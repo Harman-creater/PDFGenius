@@ -14,7 +14,7 @@ PDFGenius is a web-based academic assistant that allows users to upload PDF docu
 ## Project Structure
 
 .
-├── app.txt                 # Streamlit frontend
+├── app.txt                 # Streamlit frontend\n
 ├── auth.txt                # Flask backend for auth
 ├── ingest.txt              # Embeds PDFs and stores vectors in FAISS
 ├── utils.txt               # Utility functions (QA chain, summarizer)
