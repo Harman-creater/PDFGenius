@@ -11,18 +11,6 @@ PDFGenius is a web-based academic assistant that allows users to upload PDF docu
 - Text-to-speech responses using gTTS
 - Chat interface with conversation history
 
-## Project Structure
-
-.
-├── app.txt                 # Streamlit frontend\n
-├── auth.txt                # Flask backend for auth
-├── ingest.txt              # Embeds PDFs and stores vectors in FAISS
-├── utils.txt               # Utility functions (QA chain, summarizer)
-├── requirements.txt        # Python dependencies
-├── dataset/                # Uploaded PDFs
-├── vectorstore/            # FAISS index storage
-├── auth.db                 # SQLite DB for user data
-
 ## Usage Instructions  
 
 - Run the Flast Auth Server `python auth.py`
