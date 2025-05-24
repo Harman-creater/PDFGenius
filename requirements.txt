@@ -1,0 +1,15 @@
+streamlit
+# torch (not installed)
+transformers
+sentence-transformers
+langchain
+langchain-community
+flask
+werkzeug
+requests
+faiss-cpu
+PyPDF2
+
+pypdf
+
+gTTS
