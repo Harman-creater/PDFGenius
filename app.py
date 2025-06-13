@@ -1,13 +1,8 @@
 # UPDATE : adding voice (text to voice) 
 
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import streamlit as st
 from utils import create_qa_pipeline
 from utils import get_summarizer
-import requests
-import sqlite3
 import os
 import shutil
 from ingest import embed_documents
@@ -25,9 +20,9 @@ st.set_page_config(page_title="Edu Q&A Bot", page_icon="🎓")
 
 # Session state initialization
 if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
+    st.session_state.authenticated = True
 if "username" not in st.session_state:
-    st.session_state.username = None
+    st.session_state.username = "Guest"
 if "chat_log" not in st.session_state:
     st.session_state.chat_log = []
 if "qa_chain" not in st.session_state:
@@ -42,99 +37,6 @@ if "auth_page" not in st.session_state:
 UPLOAD_DIR = "dataset/"
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-def get_db_connection():
-    return sqlite3.connect('auth.db')
-
-
-# ------------------- AUTH PAGES -------------------
-def show_signup_page():
-    st.markdown("## 📝 Sign Up to PDFGenius")
-    with st.form("signup_form"):
-        username = st.text_input("👤 Username")
-        email = st.text_input("📧 Email")
-        password = st.text_input("🔒 Password", type="password")
-        submitted = st.form_submit_button("Sign Up")
-
-        if submitted:
-            if username and email and password:
-                response = requests.post("http://127.0.0.1:5000/signup", json={
-                    "username": username,
-                    "email": email,
-                    "password": password
-                })
-                if response.status_code == 201:
-                    st.success("🎉 Registered successfully! Please log in.")
-                else:
-                    st.error(response.json().get("error", "An error occurred during signup."))
-            else:
-                st.error("⚠️ All fields are required.")
-
-    if st.button("🔁 Already have an account? Log In"):
-        st.session_state.authenticated = False
-        st.session_state.auth_page = "login"
-        st.rerun()
-
-def show_login_page():
-    st.markdown("## 🔐 Log In to PDFGenius")
-    with st.form("login_form"):
-        username = st.text_input("👤 Username")
-        password = st.text_input("🔒 Password", type="password")
-        submitted = st.form_submit_button("Log In")
-
-        if submitted:
-            if username and password:
-                response = requests.post("http://127.0.0.1:5000/login", json={
-                    "username": username,
-                    "password": password
-                })
-
-                if st.session_state.debug:
-                    st.write(f"Response Code: {response.status_code}")
-                    st.write(f"Response Text: {response.text}")
-
-                if response.status_code == 200:
-                    st.session_state.authenticated = True
-                    st.session_state.username = username
-                    st.success("✅ Login successful!")
-                    time.sleep(2)
-                    st.rerun()
-                else:
-                    st.error(response.json().get("error", "Invalid credentials."))
-            else:
-                st.error("⚠️ All fields are required.")
-
-    if st.button("New here? Create an account"):
-        st.session_state.authenticated = False
-        st.session_state.auth_page = "signup"
-        st.rerun()
-
-    if st.button("Forgot Password"):
-        st.session_state.authenticated = False
-        st.session_state.auth_page = "forgot"
-        st.rerun()
-
-def show_forgot_password_page():
-    st.markdown("## 🔑 Forgot Password")
-    with st.form("forgot_form"):
-        email = st.text_input("📧 Enter your registered email")
-        submitted = st.form_submit_button("Send Reset Link")
-
-        if submitted:
-            if email:
-                response = requests.post("http://127.0.0.1:5000/forgot_password", json={"email": email})
-                if response.status_code == 200:
-                    st.success("📬 Password reset link sent to your email.")
-                else:
-                    st.error(response.json().get("error", "Failed to send reset link."))
-            else:
-                st.error("⚠️ Please enter your email.")
-        
-    if st.button("Log In"):
-        st.session_state.authenticated = False
-        st.session_state.auth_page = "login"
-        st.rerun()
-
 
 # ---------------------------- FILE MANAGEMENT ---------------------------- #
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -256,10 +158,6 @@ def manage_documents():
             
             st.rerun()  # optional but clean refresh
     
-    # st.sidebar.markdown("---")
-    # st.sidebar.markdown("### 📝 Summarization Option")
-    # st.session_state["summarize_mode"] = st.sidebar.checkbox("Enable Summarize Mode", value=False)
-
 # ------------------- CHATBOT PAGE -------------------
 @st.cache_resource
 def get_cached_pipeline():
@@ -304,7 +202,8 @@ def render_audio_toggle(text, uid):
 def show_chat_page():
     load_qa_pipeline()
     st.markdown(f"## 🎓 Edu Q&A Assistant")
-    st.caption(f"Welcome, **{st.session_state.username}**! Please enter your question below.")
+    st.caption("Welcome! Please enter your question below.")
+
 
     user_input = st.chat_input("Type your question here...")
 
@@ -350,34 +249,10 @@ def show_chat_page():
 
 # ------------------- MAIN APP LOGIC -------------------
 
-def show_logout_button():
-    with st.sidebar:
-        if st.button("Logout"):
-            st.session_state.authenticated = False
-            st.session_state.username = None
-            st.session_state.chat_log = []
-            st.session_state.qa_chain = None
-            st.session_state.pdf_changed = False
-            st.success("You have been logged out.")
-            time.sleep(2)
-            st.session_state.auth_page = "login"
-            st.rerun()
-
-
 if st.session_state.authenticated:
     manage_documents()
-    show_logout_button()
     show_chat_page()
-else:
-    st.markdown("# 🎓 Welcome to PDFGenius")
-    st.caption("An academic Q&A assistant to help you learn and explore.")
-    
-    if st.session_state.auth_page == "login":
-        show_login_page()
-    elif st.session_state.auth_page == "signup":
-        show_signup_page()
-    elif st.session_state.auth_page == "forgot":
-        show_forgot_password_page()
+
 
 
 
